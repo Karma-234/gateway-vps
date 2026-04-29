@@ -68,23 +68,29 @@ func (s *Server) handleConnection(conn net.Conn) {
 		mti, _ := msg.GetMTI()
 		log.Printf("Message MTI: %s", mti)
 
-		resp := iso8583.NewMessage(examples.Spec)
-		resp.MTI("0210")
-		resp.Field(39, "00")
-		respDataPacked, err := resp.Pack()
-		if err != nil {
-			log.Printf("Error packing response: %v", err)
-			return
-		}
-
-		binary.BigEndian.PutUint16(header, uint16(len(respDataPacked)))
-		_, err = conn.Write(append(header, respDataPacked...))
-		if err != nil {
-			log.Printf("Error writing response: %v", err)
-			return
-		}
-		log.Printf("Sent response: %v", resp)
+		s.processMessage(conn, msg)
 	}
+}
+
+func (s *Server) processMessage(conn net.Conn, req *iso8583.Message) {
+	// Here you would implement your business logic to process the message
+	resp := iso8583.NewMessage(examples.Spec)
+	resp.MTI("0210")
+	resp.Field(39, "00") // Response code for success
+	respDataPacked, err := resp.Pack()
+	if err != nil {
+		log.Printf("Error packing response: %v", err)
+		return
+	}
+	header := make([]byte, 2)
+	binary.BigEndian.PutUint16(header, uint16(len(respDataPacked)))
+	_, err = conn.Write(append(header, respDataPacked...))
+	if err != nil {
+		log.Printf("Error writing response: %v", err)
+		return
+	}
+	log.Printf("Sent response: %v", resp)
+
 }
 
 func (s *Server) Close() error {
