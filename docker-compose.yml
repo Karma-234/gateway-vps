@@ -11,6 +11,8 @@ services:
       - db_root_password
     volumes:
       - db_data:/var/lib/mysql
+    networks:
+      - backend
     ports:
       - "3306:3306"
   
@@ -28,6 +30,10 @@ services:
       - fineract_password
     depends_on:
       - db
+    volumes:
+      - fineract_logs:/var/lib/fineract/logs
+    networks:
+      - backend
     ports:
       - "8080:8080"
     healthcheck:
@@ -47,9 +53,18 @@ services:
     secrets:
       - fineract_password
     depends_on:
-      - fineract
+      fineract:
+        condition: service_healthy
+    networks:
+      - backend
     ports:
       - "8081:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 secrets:
   db_root_password:
@@ -59,7 +74,8 @@ secrets:
 
 volumes:
   db_data: 
-
+  fineract_logs:
 networks:
-  fineract-net:
+  backend:
     driver: bridge
+    internal: true

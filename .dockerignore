@@ -27,7 +27,7 @@ service-account.json
 
 # === Go specific ===
 go.sum.bak
-vendor/                  # if you use vendoring (most people don't now)
+vendor/                  
 *.test
 *.prof
 
@@ -53,6 +53,7 @@ coverage.html
 # === IDE / Editor files ===
 .vscode/
 .idea/
+.qodo/
 *.swp
 *.swo
 .DS_Store
