@@ -58,7 +58,9 @@ services:
     networks:
       - backend
     ports:
-      - "8081:8081"
+      - "8081:8443"
+      - "8082:8080"
+      - "8083:8080"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/health"]
       interval: 15s

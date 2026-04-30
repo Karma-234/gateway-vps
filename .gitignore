@@ -4,6 +4,7 @@
 *.env.test
 
 secrets/
+certs/
 
 # Ignore build artifacts
 /bin/
