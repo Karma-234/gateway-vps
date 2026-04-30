@@ -10,7 +10,7 @@ type FinancialRequest struct {
 	MTI            string    `iso8583:"0"`  // Message Type Indicator
 	ProcessingCode string    `iso8583:"3"`  // Processing Code
 	PAN            string    `iso8583:"2"`  // Primary Account Number
-	Amount         string    `iso8583:"4"`  // Transaction Amount
+	Amount         int64     `iso8583:"4"`  // Transaction Amount in cents/kobo
 	TransmissionDT string    `iso8583:"7"`  // Transmission Date & Time
 	STAN           string    `iso8583:"11"` // System Trace Audit Number (STAN)
 	ExpDate        string    `iso8583:"14"` // Expiration Date

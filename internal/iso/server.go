@@ -2,17 +2,21 @@ package iso
 
 import (
 	"bufio"
+	"context"
 	"encoding/binary"
 	"log"
 	"net"
 	"strings"
+	"time"
 
+	"github.com/karma-234/gateway-ps/internal/fineract"
 	"github.com/moov-io/iso8583"
 	"github.com/moov-io/iso8583/examples"
 )
 
 type Server struct {
-	listener net.Listener
+	listener       net.Listener
+	fineractClient *fineract.Client
 }
 
 func NewServer(addr string) (*Server, error) {
@@ -21,7 +25,8 @@ func NewServer(addr string) (*Server, error) {
 		return nil, err
 	}
 	s := &Server{
-		listener: ln,
+		listener:       ln,
+		fineractClient: fineract.NewClient("http://localhost:8081/api/v1", "mifos", "password"),
 	}
 	go s.acceptLoop()
 	return s, nil
@@ -82,12 +87,21 @@ func (s *Server) processMessage(conn net.Conn, req *iso8583.Message) {
 		return
 	}
 	log.Printf("Unmarshaled FinancialRequest: %+v", finRq)
-	log.Printf("Masked PAN: %s Amount: %s, STAN: %s", maskPAN(finRq.PAN), finRq.Amount, finRq.STAN)
+	log.Printf("Masked PAN: %s Amount: %d, STAN: %s", maskPAN(finRq.PAN), finRq.Amount, finRq.STAN)
 
 	// For demonstration, we will just send a simple response back
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	err = s.fineractClient.CreateSavingsTransaction(ctx, 12345, float64(finRq.Amount), finRq.RRN)
+	responseCode := "00"
+	if err != nil {
+		log.Printf("Error creating savings transaction in Fineract: %v", err)
+		responseCode = "05" // GENERIC ERROR RESPONSE CODE
+	}
+
 	resp := iso8583.NewMessage(Spec8353)
 	resp.MTI("0210")
-	resp.Field(39, "00")
+	resp.Field(39, responseCode)
 	resp.Field(37, finRq.RRN) // Response code for success
 	respDataPacked, err := resp.Pack()
 	if err != nil {
