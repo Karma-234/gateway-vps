@@ -1,6 +1,8 @@
 package iso
 
 import (
+	"sort"
+
 	"github.com/moov-io/iso8583"
 	"github.com/moov-io/iso8583/encoding"
 	"github.com/moov-io/iso8583/field"
@@ -89,9 +91,32 @@ var Spec8353 = &iso8583.MessageSpec{
 		43: field.NewComposite(&field.Spec{ // Merchant info
 			Length:      40,
 			Description: "Card Acceptor Name/Location",
-			Enc:         encoding.ASCII,
 			Pref:        prefix.ASCII.Fixed,
-			// You can add subfields later
+			Tag: &field.TagSpec{
+				Length: 2,
+				Enc:    encoding.ASCII,
+				Sort:   sort.Strings,
+			},
+			Subfields: map[string]field.Field{
+				"01": field.NewString(&field.Spec{
+					Length:      25,
+					Description: "Card Acceptor Name",
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
+				}),
+				"02": field.NewString(&field.Spec{
+					Length:      13,
+					Description: "Card Acceptor City",
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
+				}),
+				"03": field.NewString(&field.Spec{
+					Length:      2,
+					Description: "Card Acceptor Country Code",
+					Enc:         encoding.ASCII,
+					Pref:        prefix.ASCII.Fixed,
+				}),
+			},
 		}),
 		49: field.NewString(&field.Spec{
 			Length:      3,

@@ -1,9 +1,9 @@
 package iso
 
 type Acceptor struct {
-	Name    string `iso8583:"1"` // Card Acceptor Name/Location
-	City    string `iso8583:"2"` // Card Acceptor Name/Location
-	Country string `iso8583:"3"` // Card Acceptor Name/Location
+	Name    string `iso8583:"01"` // Card Acceptor Name/Location
+	City    string `iso8583:"02"` // Card Acceptor Name/Location
+	Country string `iso8583:"03"` // Card Acceptor Name/Location
 }
 
 type FinancialRequest struct {
@@ -19,4 +19,7 @@ type FinancialRequest struct {
 	MerchantID     string    `iso8583:"42"` // Merchant ID
 	Acceptor       *Acceptor `iso8583:"43"` // Card Acceptor Name/Location (composite field)
 	CurrencyCode   string    `iso8583:"49"` // Currency Code
+}
+type FinancialResponse struct {
+	FinancialRequest
 }

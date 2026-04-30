@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"log"
 	"net"
+	"strings"
 
 	"github.com/moov-io/iso8583"
 	"github.com/moov-io/iso8583/examples"
@@ -74,9 +75,20 @@ func (s *Server) handleConnection(conn net.Conn) {
 
 func (s *Server) processMessage(conn net.Conn, req *iso8583.Message) {
 	// Here you would implement your business logic to process the message
-	resp := iso8583.NewMessage(examples.Spec)
+	var finRq FinancialRequest
+	err := req.Unmarshal(&finRq)
+	if err != nil {
+		log.Printf("Error unmarshaling message to struct: %v", err)
+		return
+	}
+	log.Printf("Unmarshaled FinancialRequest: %+v", finRq)
+	log.Printf("Masked PAN: %s Amount: %s, STAN: %s", maskPAN(finRq.PAN), finRq.Amount, finRq.STAN)
+
+	// For demonstration, we will just send a simple response back
+	resp := iso8583.NewMessage(Spec8353)
 	resp.MTI("0210")
-	resp.Field(39, "00") // Response code for success
+	resp.Field(39, "00")
+	resp.Field(37, finRq.RRN) // Response code for success
 	respDataPacked, err := resp.Pack()
 	if err != nil {
 		log.Printf("Error packing response: %v", err)
@@ -95,4 +107,15 @@ func (s *Server) processMessage(conn net.Conn, req *iso8583.Message) {
 
 func (s *Server) Close() error {
 	return s.listener.Close()
+}
+
+func maskPAN(pan string) string {
+	if len(pan) <= 10 {
+		return pan
+	}
+	var res strings.Builder
+	res.WriteString(pan[:6])
+	res.WriteString("******")
+	res.WriteString(pan[len(pan)-4:])
+	return res.String()
 }
