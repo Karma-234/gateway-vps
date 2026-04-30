@@ -11,6 +11,7 @@ import (
 
 	"github.com/karma-234/gateway-ps/internal/handler/health"
 	"github.com/karma-234/gateway-ps/internal/iso"
+	"github.com/karma-234/gateway-ps/internal/metrics"
 )
 
 func main() {
@@ -29,6 +30,7 @@ func main() {
 	}()
 
 	http.HandleFunc("/health", health.Handler)
+	http.Handle("/metrics", metrics.Handler())
 
 	server := &http.Server{Addr: ":8081", TLSConfig: &tls.Config{
 		MinVersion: tls.VersionTLS12,
