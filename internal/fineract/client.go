@@ -40,7 +40,7 @@ func NewClient() *Client {
 	httpClient.RetryWaitMax = 2 * time.Second
 	baseURL := pkg.GetEnv("FINERACT_BASE_URL", "http://localhost:8081/api/v1")
 	username := pkg.GetEnv("FINERACT_USERNAME", "mifos")
-	password := pkg.GetEnv("FINERACT_PASSWORD", "password")
+	password := pkg.GetEnv("fineract_password", "password")
 	return &Client{
 		baseURL:    baseURL,
 		username:   username,

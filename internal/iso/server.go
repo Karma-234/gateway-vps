@@ -3,9 +3,13 @@ package iso
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/binary"
+	"fmt"
 	"log"
 	"net"
+	"os"
 	"strings"
 	"time"
 
@@ -20,7 +24,30 @@ type Server struct {
 }
 
 func NewServer(addr string) (*Server, error) {
-	ln, err := net.Listen("tcp", addr)
+	cert, err := tls.LoadX509KeyPair("/certs/server.crt", "/certs/server.key")
+	if err != nil {
+		return nil, err
+	}
+	caCert, err := os.ReadFile("/certs/server.crt") // Using same cert for simplicity in dev
+	if err != nil {
+		return nil, err
+	}
+	caCertPool := x509.NewCertPool()
+	if !caCertPool.AppendCertsFromPEM(caCert) {
+		return nil, fmt.Errorf("failed to append CA certificate")
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		ClientAuth:   tls.RequireAndVerifyClientCert, // mTLS
+		ClientCAs:    caCertPool,
+		MinVersion:   tls.VersionTLS12,
+		CurvePreferences: []tls.CurveID{
+			tls.CurveP256,
+			tls.X25519,
+		},
+	}
+	ln, err := tls.Listen("tcp", addr, tlsConfig)
 	if err != nil {
 		return nil, err
 	}

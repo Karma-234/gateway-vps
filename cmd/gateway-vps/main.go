@@ -18,14 +18,12 @@ func main() {
 	fmt.Println("Hello, World!")
 	go func() {
 
-		srv, err := iso.NewServer(":8080")
-		defer srv.Close()
+		_, err := iso.NewServer(":8080")
+
 		if err != nil {
 			log.Fatalf("failed to create server: %v", err)
 		}
-		// if err := srv.Start(); err != nil {
-		// 	log.Fatal(err)
-		// }
+
 		log.Println("ISO 8583 Gateway listening on :8080 (Simple TCP)")
 	}()
 
