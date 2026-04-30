@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/karma-234/gateway-ps/internal/pkg"
 	"github.com/sony/gobreaker"
 )
 
@@ -26,7 +27,7 @@ type SavingsTransactionRequest struct {
 	TypeID int     `json:"typeID"` // "1 = Cash, 2 = Transfer, 3 = Withdrawal, 4 = Interest Posting, 5 = Fee Deduction, 6 = Dividend Posting, 7 = Refund, 8 = Chargeback, 9 = Credit Balance Adjustment, 10 = Debit Balance Adjustment"
 }
 
-func NewClient(baseURL, username, password string) *Client {
+func NewClient() *Client {
 	cbSettings := gobreaker.Settings{
 		Name:        "FineractClient",
 		MaxRequests: 5,
@@ -37,7 +38,9 @@ func NewClient(baseURL, username, password string) *Client {
 	httpClient.RetryMax = 3
 	httpClient.RetryWaitMin = 500 * time.Millisecond
 	httpClient.RetryWaitMax = 2 * time.Second
-
+	baseURL := pkg.GetEnv("FINERACT_BASE_URL", "http://localhost:8081/api/v1")
+	username := pkg.GetEnv("FINERACT_USERNAME", "mifos")
+	password := pkg.GetEnv("FINERACT_PASSWORD", "password")
 	return &Client{
 		baseURL:    baseURL,
 		username:   username,

@@ -3,6 +3,8 @@
 *.env.development
 *.env.test
 
+secrets/
+
 # Ignore build artifacts
 /bin/
 /obj/

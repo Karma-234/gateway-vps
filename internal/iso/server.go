@@ -26,7 +26,7 @@ func NewServer(addr string) (*Server, error) {
 	}
 	s := &Server{
 		listener:       ln,
-		fineractClient: fineract.NewClient("http://localhost:8081/api/v1", "mifos", "password"),
+		fineractClient: fineract.NewClient(),
 	}
 	go s.acceptLoop()
 	return s, nil

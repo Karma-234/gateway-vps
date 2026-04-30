@@ -1,0 +1,9 @@
+version: '3.9'
+
+services:
+  db:
+    image: mariadb:10.11
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD_FILE:
+      - MYSQL_ROOT_DATABASE:
