@@ -78,14 +78,14 @@ services:
         condition: service_healthy
     volumes:
       - ./certs:/certs:ro
+      - gateway-vps-logs:/app/logs
     networks:
       - backend
     ports:
-      - "8081:8443"
-      - "8082:8080"
-      - "8083:8080"
+      - "8081:8081" # HTTPS health/metrics server
+      - "8082:8080" # ISO TCP listener
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/health"]
+      test: ["CMD", "wget","--no-check-certificate", "--no-verbose", "--tries=1", "--spider", "https://localhost:8081/health"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -104,6 +104,7 @@ secrets:
 volumes:
   db_data: 
   fineract_logs:
+  gateway-vps-logs:
 networks:
   backend:
     driver: bridge

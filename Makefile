@@ -20,6 +20,9 @@ help:
 certs:
 	@echo "Generating TLS certificates..."
 	@./scripts/generate-certs.sh
+	@echo "Certificates generated in certs/ directory."
+	@echo "Generating client certs for testing..."
+	@./scripts/generate_client_certs.sh
 
 secrets:
 	@echo "Generating secrets..."
