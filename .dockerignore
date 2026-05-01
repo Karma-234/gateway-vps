@@ -49,6 +49,9 @@ tests/
 **/mocks/
 coverage.out
 coverage.html
+Makefile
+# *.sh
+# scripts/
 
 # === IDE / Editor files ===
 .vscode/

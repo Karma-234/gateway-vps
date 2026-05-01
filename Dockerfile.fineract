@@ -1,0 +1,8 @@
+FROM apache/fineract:latest
+
+USER root
+COPY --chmod=755 scripts/fineract-secrets-entrypoint.sh /usr/local/bin/fineract-secrets-entrypoint.sh
+USER 1001
+
+ENTRYPOINT ["/usr/local/bin/fineract-secrets-entrypoint.sh"]
+CMD ["-Duser.home=/tmp","-Dfile.encoding=UTF-8","-Duser.timezone=UTC","-Djava.security.egd=file:/dev/./urandom"]

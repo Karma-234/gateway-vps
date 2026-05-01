@@ -5,6 +5,14 @@
 
 secrets/
 certs/
+scripts/
+config/
+*.key
+*.pem
+*.p12
+*.pfx
+credentials.json
+service-account.json
 
 # Ignore build artifacts
 /bin/

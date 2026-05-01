@@ -5,31 +5,48 @@ services:
     image: mariadb:10.11
     restart: always
     environment:
-      - MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+      - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/db_root_password
       - MYSQL_DATABASE=fineract_tenants
     secrets:
       - db_root_password
     volumes:
+      - ./scripts/init-fineract.sql:/docker-entrypoint-initdb.d/01-init-fineract.sql:ro
       - db_data:/var/lib/mysql
     networks:
       - backend
     ports:
       - "3306:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
   
   fineract:
-    image: apache/fineract:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.fineract
     restart: always
     environment:
-      - FINERACT_HIKARI_DRIVER_SOURCE_CLASS_NAME=com.mysql.cj.jdbc.Driver
-      - FINERACT_HIKARI_JDBC_URL=jdbc:mysql://db:3306/fineract_tenants?createDatabaseIfNotExist=true
+      - FINERACT_HIKARI_DRIVER_SOURCE_CLASS_NAME=org.mariadb.jdbc.Driver
+      - FINERACT_HIKARI_JDBC_URL=jdbc:mariadb://db:3306/fineract_tenants?createDatabaseIfNotExist=true
       - FINERACT_HIKARI_USERNAME=root
-      - FINERACT_HIKARI_PASSWORD_FILE: /run/secrets/fineract_password
       - FINERACT_DEFAULT_TENANTDB_IDENTIFIER=default
-      - server.port=8080
+      - FINERACT_DEFAULT_TENANTDB_HOSTNAME=db
+      - FINERACT_DEFAULT_TENANTDB_PORT=3306
+      - FINERACT_DEFAULT_TENANTDB_UID=root
+      - FINERACT_DEFAULT_TENANTDB_NAME=fineract_default
+      - FINERACT_SERVER_SSL_ENABLED=false
+      - FINERACT_SERVER_PORT=8080
+      - FINERACT_SECURITY_BASICAUTH_ENABLED=true
     secrets:
       - fineract_password
+      - FINERACT_HIKARI_PASSWORD
+      - FINERACT_DEFAULT_TENANTDB_PWD
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - fineract_logs:/var/lib/fineract/logs
     networks:
@@ -37,24 +54,29 @@ services:
     ports:
       - "8080:8080"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/fineract-provider/actuator/health"]
-      interval: 1m30s
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/fineract-provider/actuator/health"]
+      interval: 30s
       timeout: 10s
-      retries: 10s
-      start_period: 30s
+      retries: 10
+      start_period: 3m
 
-  gateway:
-    build: .
+  gateway-vps:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - VERSION="v0.1.0"
     restart: always
     environment:
-      - FINERACT_BASE_URL=http://fineract:8080/api/v1
+      - FINERACT_BASE_URL=http://fineract:8080/fineract-provider/api/v1
       - FINERACT_USERNAME=mifos
-      - FINERACT_PASSWORD_FILE=/run/secrets/fineract_password
     secrets:
       - fineract_password
     depends_on:
       fineract:
         condition: service_healthy
+    volumes:
+      - ./certs:/certs:ro
     networks:
       - backend
     ports:
@@ -73,6 +95,10 @@ secrets:
     file: secrets/db_root_password.txt
   fineract_password:
     file: secrets/fineract_password.txt
+  FINERACT_HIKARI_PASSWORD:
+    file: secrets/db_root_password.txt
+  FINERACT_DEFAULT_TENANTDB_PWD:
+    file: secrets/db_root_password.txt
 
 volumes:
   db_data: 
@@ -80,4 +106,4 @@ volumes:
 networks:
   backend:
     driver: bridge
-    internal: true
+    internal: false
