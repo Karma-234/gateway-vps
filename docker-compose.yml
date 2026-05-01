@@ -67,6 +67,7 @@ services:
       args:
         - VERSION="v0.1.0"
     restart: always
+    read_only: true
     environment:
       - FINERACT_BASE_URL=http://fineract:8080/fineract-provider/api/v1
       - FINERACT_USERNAME=mifos
