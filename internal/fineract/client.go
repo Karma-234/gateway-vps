@@ -5,7 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/hashicorp/go-retryablehttp"
@@ -22,9 +24,11 @@ type Client struct {
 }
 
 type SavingsTransactionRequest struct {
-	Date   string  `json:"date"`
-	Amount float64 `json:"amount"`
-	TypeID int     `json:"typeID"` // "1 = Cash, 2 = Transfer, 3 = Withdrawal, 4 = Interest Posting, 5 = Fee Deduction, 6 = Dividend Posting, 7 = Refund, 8 = Chargeback, 9 = Credit Balance Adjustment, 10 = Debit Balance Adjustment"
+	TransactionDate   string `json:"transactionDate"`
+	TransactionAmount string `json:"transactionAmount"`
+	Locale            string `json:"locale"`
+	DateFormat        string `json:"dateFormat"`
+	PaymentTypeID     int8   `json:"paymentTypeId,omitempty"`
 }
 
 func NewClient() *Client {
@@ -52,18 +56,22 @@ func NewClient() *Client {
 
 func (c *Client) CreateSavingsTransaction(ctx context.Context, accountID int64, amount float64, rrn string) error {
 	req := &SavingsTransactionRequest{
-		Date:   time.Now().Format("2006-01-02"),
-		Amount: amount,
-		TypeID: 1, // Cash
+		TransactionDate:   time.Now().Format("02 January 2006"),
+		TransactionAmount: fmt.Sprintf("%.2f", amount/100.0),
+		Locale:            "en",
+		DateFormat:        "dd MMMM yyyy",
+		PaymentTypeID:     1,
 	}
 	body, _ := json.Marshal(req)
 	url := fmt.Sprintf("%s/savingsaccounts/%d/transactions?command=deposit", c.baseURL, accountID)
 	httpReq, err := retryablehttp.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+
 	if err != nil {
 		return err
 	}
 	httpReq.SetBasicAuth(c.username, c.password)
 	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Fineract-Platform-TenantId", "default")
 
 	_, err = c.cb.Execute(func() (any, error) {
 		resp, err := c.httpClient.Do(httpReq)
@@ -74,13 +82,17 @@ func (c *Client) CreateSavingsTransaction(ctx context.Context, accountID int64, 
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		log.Printf("Fineract deposit failed for account %s | Amount: %.2f | RRN: %s | Status: %d",
+			pkg.MaskPAN(strconv.FormatInt(accountID, 10)), amount/100, rrn, resp.StatusCode)
+		b, _ := io.ReadAll(resp.Body)
+		log.Printf("Fineract error response body: %s", string(b))
+		return nil, fmt.Errorf("unexpected status code: %d body: %s", resp.StatusCode, string(b))
 	})
 
 	if err != nil {
 		return fmt.Errorf("failed to create savings transaction: %w", err)
 	}
-	log.Printf("✅ Fineract deposit recorded for account %d | Amount: %.2f | RRN: %s",
-		accountID, amount/100, rrn)
+	log.Printf("Fineract deposit recorded for account %s | Amount: %.2f | RRN: %s",
+		pkg.MaskPAN(strconv.FormatInt(accountID, 10)), amount/100, rrn)
 	return nil
 }

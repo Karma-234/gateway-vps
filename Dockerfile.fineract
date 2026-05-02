@@ -1,7 +1,10 @@
-FROM apache/fineract:latest
+FROM alpine:3.20 AS script
+COPY scripts/fineract-secrets-entrypoint.sh /out/fineract-secrets-entrypoint.sh
+RUN chmod 755 /out/fineract-secrets-entrypoint.sh
 
+FROM apache/fineract:24.10.0
 USER root
-COPY --chmod=755 scripts/fineract-secrets-entrypoint.sh /usr/local/bin/fineract-secrets-entrypoint.sh
+COPY --from=script /out/fineract-secrets-entrypoint.sh /usr/local/bin/fineract-secrets-entrypoint.sh
 USER 1001
 
 ENTRYPOINT ["/usr/local/bin/fineract-secrets-entrypoint.sh"]
